@@ -51,6 +51,7 @@ ego_vehicle = world.spawn_actor(random.choice(vehicle_blueprints), random.choice
 # spectator.set_transform(ego_vehicle.get_transform())
 # cc = carla.ColorConverter.CityScapesPalette
 # camera_semantic_segmentation.listen(lambda image: image.save_to_disk('./out/%06d.png' % image.frame, cc))
+# ego_vehicle.set_autopilot(True)
 # # time.sleep(5.0) # needed for camera images to be saved
 
 
