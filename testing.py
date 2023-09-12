@@ -41,16 +41,16 @@ ego_vehicle = world.spawn_actor(random.choice(vehicle_blueprints), random.choice
 # semantic segmentation camera
 # In https://carla.readthedocs.io/en/0.9.14/python_api/#carla.Sensor.listen, check for code snippet
 # https://carla.readthedocs.io/en/0.9.14/ref_sensors/#semantic-segmentation-camera
-# camera_initial_transform = carla.Transform(carla.Location(z=2.5)) # Create a transform to place the camera on top of the vehicle
-# camera_semantic_segmentation_blueprint = world.get_blueprint_library().find('sensor.camera.semantic_segmentation')
-# IM_WIDTH = 640*2
-# IM_HEIGHT = 480*2
-# camera_semantic_segmentation_blueprint.set_attribute('image_size_x', str(IM_WIDTH))
-# camera_semantic_segmentation_blueprint.set_attribute('image_size_y', str(IM_HEIGHT))
-# camera_semantic_segmentation = world.spawn_actor(camera_semantic_segmentation_blueprint, camera_initial_transform, attach_to=ego_vehicle)
-# spectator.set_transform(ego_vehicle.get_transform())
-# cc = carla.ColorConverter.CityScapesPalette
-# camera_semantic_segmentation.listen(lambda image: image.save_to_disk('./out/%06d.png' % image.frame, cc))
+camera_initial_transform = carla.Transform(carla.Location(z=2.5)) # Create a transform to place the camera on top of the vehicle
+camera_semantic_segmentation_blueprint = world.get_blueprint_library().find('sensor.camera.semantic_segmentation')
+IM_WIDTH = 640*2
+IM_HEIGHT = 480*2
+camera_semantic_segmentation_blueprint.set_attribute('image_size_x', str(IM_WIDTH))
+camera_semantic_segmentation_blueprint.set_attribute('image_size_y', str(IM_HEIGHT))
+camera_semantic_segmentation = world.spawn_actor(camera_semantic_segmentation_blueprint, camera_initial_transform, attach_to=ego_vehicle)
+spectator.set_transform(ego_vehicle.get_transform())
+cc = carla.ColorConverter.CityScapesPalette
+camera_semantic_segmentation.listen(lambda image: image.save_to_disk('./out/%06d.png' % image.frame, cc))
 # ego_vehicle.set_autopilot(True)
 # # time.sleep(5.0) # needed for camera images to be saved
 
@@ -58,6 +58,7 @@ ego_vehicle = world.spawn_actor(random.choice(vehicle_blueprints), random.choice
 import numpy as np
 from PIL import Image
 
+# References: https://github.com/carla-simulator/carla/issues/4610 , https://carla.readthedocs.io/en/0.9.14/python_api/#carlaopticalflowimage, https://carla.readthedocs.io/en/latest/ref_sensors/#optical-flow-camera
 def opticalFlowCallback(data):
     image = data.get_color_coded_flow()
     # print(data)
