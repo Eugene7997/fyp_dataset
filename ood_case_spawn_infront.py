@@ -10,6 +10,11 @@ def semanticSegmentationFlowCallback(image):
     buffer = buffer.reshape(image.height, image.width, 4)[..., [2, 1, 0]]  # BGRA -> RGB
     Image.fromarray(buffer).save(f"./out/ss{image.frame}.png", "PNG")
 
+def rgbCameraCallback(image):
+    buffer = np.frombuffer(image.raw_data, dtype=np.uint8)
+    buffer = buffer.reshape(image.height, image.width, 4)[..., [2, 1, 0]]  # BGRA -> RGB
+    Image.fromarray(buffer).save(f"./out/ss{image.frame}.png", "PNG")
+
 def opticalFlowCallback(data):
     image = data.get_color_coded_flow()
     buffer = np.frombuffer(image.raw_data, dtype=np.uint8)
@@ -47,7 +52,6 @@ camera_optical_flow_blueprint.set_attribute('image_size_x', str(IM_WIDTH))
 camera_optical_flow_blueprint.set_attribute('image_size_y', str(IM_HEIGHT))
 camera_optical_flow = world.spawn_actor(camera_optical_flow_blueprint, camera_initial_transform, attach_to=ego_vehicle)
 spectator.set_transform(ego_vehicle.get_transform())
-camera_optical_flow.listen(lambda data: opticalFlowCallback(data))
 
 # semantic segmentation camera
 camera_semantic_segmentation_blueprint = world.get_blueprint_library().find('sensor.camera.semantic_segmentation')
@@ -55,8 +59,16 @@ camera_semantic_segmentation_blueprint.set_attribute('image_size_x', str(IM_WIDT
 camera_semantic_segmentation_blueprint.set_attribute('image_size_y', str(IM_HEIGHT))
 camera_semantic_segmentation = world.spawn_actor(camera_semantic_segmentation_blueprint, camera_initial_transform, attach_to=ego_vehicle)
 spectator.set_transform(ego_vehicle.get_transform())
-# cc = carla.ColorConverter.CityScapesPalette
-# camera_semantic_segmentation.listen(lambda image: image.save_to_disk('./out/%06d.png' % image.frame, cc))
+
+# normal rgb camera
+camera_rgb_blueprint = world.get_blueprint_library().find('sensor.camera.rgb')
+camera_rgb_blueprint.set_attribute('image_size_x', str(IM_WIDTH))
+camera_rgb_blueprint.set_attribute('image_size_y', str(IM_HEIGHT))
+camera_rgb = world.spawn_actor(camera_rgb_blueprint, camera_initial_transform, attach_to=ego_vehicle)
+spectator.set_transform(ego_vehicle.get_transform())
+
+camera_rgb.listen(lambda data: rgbCameraCallback(data))
+camera_optical_flow.listen(lambda data: opticalFlowCallback(data))
 camera_semantic_segmentation.listen(lambda data: semanticSegmentationFlowCallback(data))
 
 # move the vehicle in a straight direction
