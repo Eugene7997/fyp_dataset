@@ -75,7 +75,8 @@ camera_semantic_segmentation.listen(lambda data: semanticSegmentationFlowCallbac
 counter = 0
 custom_defined_transform_for_ood = carla.Transform(carla.Location(x=35.590208, y=-41.658614, z=1.980442), carla.Rotation(yaw=-90))
 while True:
-    if counter == 5000:
+    print(counter)
+    if counter == 1100:
         world.spawn_actor(random.choice(vehicle_blueprints), custom_defined_transform_for_ood)
     if agent.done():
         print("The target has been reached, stopping the simulation")
