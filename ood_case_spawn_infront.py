@@ -76,7 +76,7 @@ counter = 0
 custom_defined_transform_for_ood = carla.Transform(carla.Location(x=35.590208, y=-41.658614, z=1.980442), carla.Rotation(yaw=-90))
 while True:
     print(counter)
-    if counter == 1100:
+    if counter == 1100: # you need to adjust this. The more image captures, the lower this value needs to be for OOD car to spawn in time.
         world.spawn_actor(random.choice(vehicle_blueprints), custom_defined_transform_for_ood)
     if agent.done():
         print("The target has been reached, stopping the simulation")
