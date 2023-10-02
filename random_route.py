@@ -10,6 +10,11 @@ def semanticSegmentationFlowCallback(image):
     buffer = buffer.reshape(image.height, image.width, 4)[..., [2, 1, 0]]  # BGRA -> RGB
     Image.fromarray(buffer).save(f"./out/ss{image.frame}.png", "PNG")
 
+def rgbCameraCallback(image):
+    buffer = np.frombuffer(image.raw_data, dtype=np.uint8)
+    buffer = buffer.reshape(image.height, image.width, 4)[..., [2, 1, 0]]  # BGRA -> RGB
+    Image.fromarray(buffer).save(f"./out/rgb{image.frame}.png", "PNG")
+
 def opticalFlowCallback(data):
     image = data.get_color_coded_flow()
     buffer = np.frombuffer(image.raw_data, dtype=np.uint8)
@@ -42,6 +47,14 @@ spectator.set_transform(ego_vehicle.get_transform())
 camera_initial_transform = carla.Transform(carla.Location(z=2.5)) # Create a transform to place the camera on top of the vehicle
 IM_WIDTH = 640*2
 IM_HEIGHT = 480*2
+
+#rgb camera
+camera_rgb_blueprint = world.get_blueprint_library().find('sensor.camera.rgb')
+camera_rgb_blueprint.set_attribute('image_size_x', str(IM_WIDTH))
+camera_rgb_blueprint.set_attribute('image_size_y', str(IM_HEIGHT))
+camera_rgb = world.spawn_actor(camera_rgb_blueprint, camera_initial_transform, attach_to=ego_vehicle)
+spectator.set_transform(ego_vehicle.get_transform())
+camera_rgb.listen(lambda data: rgbCameraCallback(data))
 
 # optical flow camera 
 camera_optical_flow_blueprint = world.get_blueprint_library().find('sensor.camera.optical_flow')
