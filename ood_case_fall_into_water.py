@@ -5,6 +5,7 @@ import random
 from agents.navigation.basic_agent import BasicAgent
 from queue import Queue
 from queue import Empty
+import time
 
 def semanticSegmentationFlowCallback(image, sensor_queue, sensor_name):
     image.convert(carla.ColorConverter.CityScapesPalette)
@@ -35,19 +36,17 @@ world.unload_map_layer(carla.MapLayer.Walls)
 original_settings = world.get_settings()
 settings = world.get_settings()
 settings.fixed_delta_seconds = 0.05
-# settings.synchronous_mode = True
+settings.synchronous_mode = True
 
 sensor_queue = Queue()
 sensor_list = []
 
 # spawn vehicle
 vehicle_blueprints = world.get_blueprint_library().filter('vehicle.tesla.model3')
-# spawn_points = world.get_map().get_spawn_points()
-custom_defined_transform = carla.Transform(carla.Location(x=-156.118408, y=159.186096, z=1.598475), carla.Rotation(yaw=180))
-ego_vehicle = world.spawn_actor(random.choice(vehicle_blueprints), custom_defined_transform)
-ego_vehicle.set_simulate_physics(False) 
+spawn_points = world.get_map().get_spawn_points()
+ego_vehicle = world.spawn_actor(random.choice(vehicle_blueprints), random.choice(spawn_points))
 # camera
-camera_initial_transform = carla.Transform(carla.Location(z=2.5)) # Create a transform to place the camera on top of the vehicle
+camera_initial_transform = carla.Transform(carla.Location(z=1.5)) # Create a transform to place the camera on top of the vehicle
 IM_WIDTH = 640*2
 IM_HEIGHT = 480*2
 
@@ -76,24 +75,25 @@ sensor_list.append(camera_optical_flow)
 spectator = world.get_spectator()
 spectator.set_transform(ego_vehicle.get_transform())
 
-# set destination for vehicle
-agent = BasicAgent(ego_vehicle)
-destination = carla.Location(x=-215.493530, y=159.186096, z=1.598475)
-agent.set_destination(destination)
-
 camera_rgb.listen(lambda data: rgbCameraCallback(data, sensor_queue, "rgb"))
 camera_optical_flow.listen(lambda data: opticalFlowCallback(data, sensor_queue, "opticalFlow"))
 camera_semantic_segmentation.listen(lambda data: semanticSegmentationFlowCallback(data, sensor_queue, "semanticSegmentation"))
 
-# move the vehicle in a straight direction
 
-world.apply_settings(settings) # must be here after the destination is set
+ego_vehicle.set_autopilot(True)
 
+world.apply_settings(settings)
+
+counter = 0
 while True:
     world.tick()
     for _ in range(len(sensor_list)):
         s_frame = sensor_queue.get(True, 1.0)
-    if agent.done():
-        print("The target has been reached, stopping the simulation")
+    if (counter == 10):
+        ego_vehicle.set_transform(carla.Transform(carla.Location(x=-227.037689, y=162.543137, z=8.654385), carla.Rotation(pitch=1.956870, yaw=-1.042053, roll=0.000042)))
+        ego_vehicle.set_autopilot(False)
+        print("vehicle teleported")
+    counter+=1
+    if (counter == 50):
         break
-    ego_vehicle.apply_control(agent.run_step())
+
