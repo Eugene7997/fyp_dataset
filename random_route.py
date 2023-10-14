@@ -39,6 +39,16 @@ for i in range(0,50):
     else:    
         temp.set_autopilot(True)
 
+list_actor = world.get_actors()
+for actor_ in list_actor:
+    if isinstance(actor_, carla.TrafficLight):
+        # for any light, first set the light state, then set time. for yellow it is 
+        # carla.TrafficLightState.Yellow and Red it is carla.TrafficLightState.Red
+        actor_.set_state(carla.TrafficLightState.Green) 
+        actor_.set_green_time(1000.0)
+        # actor_.set_green_time(5000.0)
+        # actor_.set_yellow_time(1000.0)
+
 # bring pov to vehicle
 spectator = world.get_spectator()
 spectator.set_transform(ego_vehicle.get_transform())
@@ -54,7 +64,6 @@ camera_rgb_blueprint.set_attribute('image_size_x', str(IM_WIDTH))
 camera_rgb_blueprint.set_attribute('image_size_y', str(IM_HEIGHT))
 camera_rgb = world.spawn_actor(camera_rgb_blueprint, camera_initial_transform, attach_to=ego_vehicle)
 spectator.set_transform(ego_vehicle.get_transform())
-camera_rgb.listen(lambda data: rgbCameraCallback(data))
 
 # optical flow camera 
 camera_optical_flow_blueprint = world.get_blueprint_library().find('sensor.camera.optical_flow')
@@ -62,7 +71,6 @@ camera_optical_flow_blueprint.set_attribute('image_size_x', str(IM_WIDTH))
 camera_optical_flow_blueprint.set_attribute('image_size_y', str(IM_HEIGHT))
 camera_optical_flow = world.spawn_actor(camera_optical_flow_blueprint, camera_initial_transform, attach_to=ego_vehicle)
 spectator.set_transform(ego_vehicle.get_transform())
-camera_optical_flow.listen(lambda data: opticalFlowCallback(data))
 
 # semantic segmentation camera
 camera_semantic_segmentation_blueprint = world.get_blueprint_library().find('sensor.camera.semantic_segmentation')
@@ -70,6 +78,9 @@ camera_semantic_segmentation_blueprint.set_attribute('image_size_x', str(IM_WIDT
 camera_semantic_segmentation_blueprint.set_attribute('image_size_y', str(IM_HEIGHT))
 camera_semantic_segmentation = world.spawn_actor(camera_semantic_segmentation_blueprint, camera_initial_transform, attach_to=ego_vehicle)
 spectator.set_transform(ego_vehicle.get_transform())
+
+camera_rgb.listen(lambda data: rgbCameraCallback(data))
+camera_optical_flow.listen(lambda data: opticalFlowCallback(data))
 camera_semantic_segmentation.listen(lambda data: semanticSegmentationFlowCallback(data))
 
 ego_vehicle.set_autopilot(True)
