@@ -24,6 +24,12 @@ def opticalFlowCallback(data):
 # Carla world generation
 client = carla.Client('localhost', 2000)
 world = client.get_world()
+
+settings = world.get_settings()
+settings.synchronous_mode = True # Enables synchronous mode
+settings.fixed_delta_seconds = 0.05
+world.apply_settings(settings)
+
 client.load_world('Town05')
 
 # spawn vehicle
@@ -79,9 +85,10 @@ camera_semantic_segmentation_blueprint.set_attribute('image_size_y', str(IM_HEIG
 camera_semantic_segmentation = world.spawn_actor(camera_semantic_segmentation_blueprint, camera_initial_transform, attach_to=ego_vehicle)
 spectator.set_transform(ego_vehicle.get_transform())
 
-camera_rgb.listen(lambda data: rgbCameraCallback(data))
-camera_optical_flow.listen(lambda data: opticalFlowCallback(data))
-camera_semantic_segmentation.listen(lambda data: semanticSegmentationFlowCallback(data))
+# camera_rgb.listen(lambda data: rgbCameraCallback(data))
+# camera_optical_flow.listen(lambda data: opticalFlowCallback(data))
+# camera_semantic_segmentation.listen(lambda data: semanticSegmentationFlowCallback(data))
+
 
 ego_vehicle.set_autopilot(True)
 time.sleep(60)
