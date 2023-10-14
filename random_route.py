@@ -38,7 +38,7 @@ spawn_points = world.get_map().get_spawn_points()
 ego_vehicle = world.spawn_actor(random.choice(vehicle_blueprints), random.choice(spawn_points))
 
 # spawn other vehicles
-for i in range(0,50):
+for i in range(0,10):
     temp = world.try_spawn_actor(random.choice(vehicle_blueprints), random.choice(spawn_points))
     if temp == None:
         pass
@@ -85,9 +85,9 @@ camera_semantic_segmentation_blueprint.set_attribute('image_size_y', str(IM_HEIG
 camera_semantic_segmentation = world.spawn_actor(camera_semantic_segmentation_blueprint, camera_initial_transform, attach_to=ego_vehicle)
 spectator.set_transform(ego_vehicle.get_transform())
 
-# camera_rgb.listen(lambda data: rgbCameraCallback(data))
-# camera_optical_flow.listen(lambda data: opticalFlowCallback(data))
-# camera_semantic_segmentation.listen(lambda data: semanticSegmentationFlowCallback(data))
+camera_rgb.listen(lambda data: rgbCameraCallback(data))
+camera_optical_flow.listen(lambda data: opticalFlowCallback(data))
+camera_semantic_segmentation.listen(lambda data: semanticSegmentationFlowCallback(data))
 
 
 ego_vehicle.set_autopilot(True)
