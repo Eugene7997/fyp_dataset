@@ -5,15 +5,18 @@ import random
 import time
 from queue import Queue
 import csv
+import pandas as pd
+import base64
+
+df = pd.DataFrame(columns=["x", "y"])
 
 def write_to_csv(image_input):
     with open('data.csv', 'w', newline='') as csvfile:
         imageToMatrice = np.asarray(image_input)
-        # spamwriter = csv.writer(csvfile, delimiter=' ', quotechar='|', quoting=csv.QUOTE_MINIMAL)
-        # spamwriter.writerow([imageToMatrice])
-        # csvfile.write(','.join(imageToMatrice))
+        flattened_array = imageToMatrice.flatten()
+        a = ','.join(map(str, flattened_array))
         csv_writer = csv.writer(csvfile)
-        csv_writer.writerow(imageToMatrice)
+        csv_writer.writerow(a)
 
 def semanticSegmentationFlowCallback(image, sensor_queue, sensor_name):
     image.convert(carla.ColorConverter.CityScapesPalette)
@@ -22,6 +25,11 @@ def semanticSegmentationFlowCallback(image, sensor_queue, sensor_name):
     Image.fromarray(buffer).save(f"./out/ss{image.frame}.png", "PNG")
     sensor_queue.put((image.frame, sensor_name))
     write_to_csv(buffer)
+
+    # img_data = buffer.tobytes()
+    # encoded_img_data = base64.b64encode(buffer).decode('utf-8')
+    # global df
+    # df = df.append(pd.Series([encoded_img_data]), ignore_index=True)
     
 def rgbCameraCallback(image, sensor_queue, sensor_name):
     buffer = np.frombuffer(image.raw_data, dtype=np.uint8)
@@ -110,8 +118,13 @@ camera_semantic_segmentation.listen(lambda data: semanticSegmentationFlowCallbac
 
 ego_vehicle.set_autopilot(True)
 
+counter = 0
 while True:
     world.tick()
     for _ in range(len(sensor_list)):
         s_frame = sensor_queue.get(True, 1.0)
+    if counter == 30:
+        break
+    counter += 1
 
+df.to_csv("data.csv",index=False)
