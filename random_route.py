@@ -4,6 +4,16 @@ import carla
 import random
 import time
 from queue import Queue
+import csv
+
+def write_to_csv(image_input):
+    with open('data.csv', 'w', newline='') as csvfile:
+        imageToMatrice = np.asarray(image_input)
+        # spamwriter = csv.writer(csvfile, delimiter=' ', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+        # spamwriter.writerow([imageToMatrice])
+        # csvfile.write(','.join(imageToMatrice))
+        csv_writer = csv.writer(csvfile)
+        csv_writer.writerow(imageToMatrice)
 
 def semanticSegmentationFlowCallback(image, sensor_queue, sensor_name):
     image.convert(carla.ColorConverter.CityScapesPalette)
@@ -11,6 +21,7 @@ def semanticSegmentationFlowCallback(image, sensor_queue, sensor_name):
     buffer = buffer.reshape(image.height, image.width, 4)[..., [2, 1, 0]]  # BGRA -> RGB
     Image.fromarray(buffer).save(f"./out/ss{image.frame}.png", "PNG")
     sensor_queue.put((image.frame, sensor_name))
+    write_to_csv(buffer)
     
 def rgbCameraCallback(image, sensor_queue, sensor_name):
     buffer = np.frombuffer(image.raw_data, dtype=np.uint8)
@@ -43,7 +54,7 @@ spawn_points = world.get_map().get_spawn_points()
 ego_vehicle = world.spawn_actor(random.choice(vehicle_blueprints), random.choice(spawn_points))
 
 # spawn other vehicles
-for i in range(0,50):
+for i in range(0,5):
     temp = world.try_spawn_actor(random.choice(vehicle_blueprints), random.choice(spawn_points))
     if temp == None:
         pass
