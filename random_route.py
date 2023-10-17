@@ -8,36 +8,21 @@ import csv
 import pandas as pd
 import base64
 
-def write_to_csv(image_input):
-    # with open('data.csv', 'w', newline='') as csvfile:
-    #     imageToMatrice = np.asarray(image_input)
-    #     flattened_array = imageToMatrice.flatten()
-    #     a = ','.join(map(str, flattened_array))
-    #     csv_writer = csv.writer(csvfile)
-    #     csv_writer.writerow(a)
-
-    # with open('data.csv', 'w', newline='') as csvfile:
-        # imageToMatrice = Image.fromarray(image_input.astype(np.uint8),'RGB')
-        # a = ','.join(map(str, imageToMatrice))
-        # csv_writer = csv.writer(csvfile)
-        # csv_writer.writerow(image_input)
-    
+def write_to_csv(image_input):    
     # TODO:
     # how to separate each image in csv? Newline? row size?
     # implement for other cameras
+    # implement wait for sensor queue. write_to_csv some how causes empty queue. Might be timing issue
+
+    # Reference: https://www.geeksforgeeks.org/how-to-convert-an-image-to-numpy-array-and-saveit-to-csv-file-using-python/   
 
     # Assuming we are using original image. Original image has correct labels.
     buffer2 = np.frombuffer(image_input.raw_data, dtype=np.uint8)
     buffer2 = buffer2.reshape(image_input.height, image_input.width, 4)[..., [2, 1, 0]]  # BGRA -> RGB
     buffer2 = buffer2[:,:,0] # it seems that its the same values for all 3 R,G,B dimensions
-    print(f"buffer2: {buffer2}")
-    print(f"buffer2: {type(buffer2)}")
-    print(f"buffer2: {buffer2.shape}")
     f=open('data.csv','ab')
     np.savetxt(f,buffer2, delimiter=",", fmt="%i") # require fmt cuz values keeps converting to float
     f.close()
-
-    # np.save("data.csv", image_input)
 
 def semanticSegmentationFlowCallback(image, sensor_queue, sensor_name):
     write_to_csv(image) 
@@ -46,13 +31,6 @@ def semanticSegmentationFlowCallback(image, sensor_queue, sensor_name):
     buffer = buffer.reshape(image.height, image.width, 4)[..., [2, 1, 0]]  # BGRA -> RGB
     Image.fromarray(buffer).save(f"./out/ss{image.frame}.png", "PNG")
     sensor_queue.put((image.frame, sensor_name))
-
-    # write_to_csv(buffer)
-
-    # img_data = buffer.tobytes()
-    # encoded_img_data = base64.b64encode(buffer).decode('utf-8')
-    # global df
-    # df = df.append(pd.Series([encoded_img_data]), ignore_index=True)
     
 def rgbCameraCallback(image, sensor_queue, sensor_name):
     buffer = np.frombuffer(image.raw_data, dtype=np.uint8)
@@ -127,12 +105,8 @@ for i in range(0,5):
 list_actor = world.get_actors()
 for actor_ in list_actor:
     if isinstance(actor_, carla.TrafficLight):
-        # for any light, first set the light state, then set time. for yellow it is 
-        # carla.TrafficLightState.Yellow and Red it is carla.TrafficLightState.Red
         actor_.set_state(carla.TrafficLightState.Green) 
         actor_.set_green_time(1000.0)
-        # actor_.set_green_time(5000.0)
-        # actor_.set_yellow_time(1000.0)
 
 # bring pov to vehicle
 spectator = world.get_spectator()
@@ -144,7 +118,10 @@ counter = 0
 while True:
     world.tick()
     for _ in range(len(sensor_list)):
-        s_frame = sensor_queue.get(True, 1.0)
+        if not sensor_queue.empty():
+            s_frame = sensor_queue.get(True, 1.0)
+        else:
+            time.sleep(1)
     if counter == 30:
         break
     counter += 1
