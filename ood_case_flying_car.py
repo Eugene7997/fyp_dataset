@@ -6,18 +6,53 @@ from agents.navigation.basic_agent import BasicAgent
 from queue import Queue
 from queue import Empty
 
+def write_to_csv(image_input, camera_type_name):    
+    # TODO:
+    # how to separate each image in csv? Newline? row size?
+    # implement for other cameras
+
+    # Reference: https://www.geeksforgeeks.org/how-to-convert-an-image-to-numpy-array-and-saveit-to-csv-file-using-python/   
+    # print(f"camera_type_name {camera_type_name}")
+    if camera_type_name == 'semanticSegmentation':
+        # Assuming we are using original image. Original image has correct labels.
+        buffer2 = np.frombuffer(image_input.raw_data, dtype=np.uint8)
+        buffer2 = buffer2.reshape(image_input.height, image_input.width, 4)[..., [2, 1, 0]]  # BGRA -> RGB
+        buffer2 = buffer2[:,:,0] # it seems that its the same values for all 3 R,G,B dimensions
+        f=open('semanticSegmentation.csv','ab')
+        np.savetxt(f,buffer2, delimiter=",", fmt="%i") # require fmt cuz values keeps converting to float
+        f.close()
+        return
+    elif camera_type_name == 'opticalFlow':
+        buffer2 = np.frombuffer(image_input.raw_data, dtype=np.float32)
+        buffer2 = buffer2.reshape(image_input.height, image_input.width, 2) # 2d, horizontal and vertical
+        buffer2 = buffer2.reshape(buffer2.shape[0], -1) # np save text does not allow 3d
+        f=open('opticalFlow.csv','ab')
+        np.savetxt(f,buffer2, delimiter=",")
+        f.close()
+        return
+    elif camera_type_name == 'rgb':
+        buffer2 = np.frombuffer(image_input.raw_data, dtype=np.uint8)
+        buffer2 = buffer2.reshape(image_input.height, image_input.width, 4)[..., [2, 1, 0]]  # BGRA -> RGB
+        buffer2 = buffer2.reshape(buffer2.shape[0], -1) # np save text does not allow 3d
+        f=open('rgb.csv','ab')
+        np.savetxt(f,buffer2, delimiter=",", fmt="%i") # require fmt cuz values keeps converting to float
+        f.close()
+        return
+
 def semanticSegmentationFlowCallback(image, sensor_queue, sensor_name):
     image.convert(carla.ColorConverter.CityScapesPalette)
     buffer = np.frombuffer(image.raw_data, dtype=np.uint8)
     buffer = buffer.reshape(image.height, image.width, 4)[..., [2, 1, 0]]  # BGRA -> RGB
     Image.fromarray(buffer).save(f"./out/ss{image.frame}.png", "PNG")
     sensor_queue.put((image.frame, sensor_name))
+    write_to_csv(image, sensor_name) 
     
 def rgbCameraCallback(image, sensor_queue, sensor_name):
     buffer = np.frombuffer(image.raw_data, dtype=np.uint8)
     buffer = buffer.reshape(image.height, image.width, 4)[..., [2, 1, 0]]  # BGRA -> RGB
     Image.fromarray(buffer).save(f"./out/rgb{image.frame}.png", "PNG")
     sensor_queue.put((image.frame, sensor_name))
+    write_to_csv(image, sensor_name) 
 
 def opticalFlowCallback(data, sensor_queue, sensor_name):
     image = data.get_color_coded_flow()
@@ -25,6 +60,7 @@ def opticalFlowCallback(data, sensor_queue, sensor_name):
     buffer = buffer.reshape(image.height, image.width, 4)[..., [2, 1, 0]]  # BGRA -> RGB
     Image.fromarray(buffer).save(f"./out/of{data.frame}.jpeg", "JPEG")
     sensor_queue.put((data.frame, sensor_name))
+    write_to_csv(data, sensor_name) 
 
 # Carla world generation
 client = carla.Client('localhost', 2000)
