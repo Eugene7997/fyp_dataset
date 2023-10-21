@@ -5,14 +5,9 @@ import random
 from agents.navigation.basic_agent import BasicAgent
 from queue import Queue
 from queue import Empty
+import time
 
 def write_to_csv(image_input, camera_type_name):    
-    # TODO:
-    # how to separate each image in csv? Newline? row size?
-    # implement for other cameras
-
-    # Reference: https://www.geeksforgeeks.org/how-to-convert-an-image-to-numpy-array-and-saveit-to-csv-file-using-python/   
-    # print(f"camera_type_name {camera_type_name}")
     if camera_type_name == 'semanticSegmentation':
         # Assuming we are using original image. Original image has correct labels.
         buffer2 = np.frombuffer(image_input.raw_data, dtype=np.uint8)
@@ -82,7 +77,7 @@ custom_defined_transform = carla.Transform(carla.Location(x=31.290208, y=-11.658
 ego_vehicle = world.spawn_actor(random.choice(vehicle_blueprints), custom_defined_transform)
 
 # camera
-camera_initial_transform = carla.Transform(carla.Location(z=2.5)) # Create a transform to place the camera on top of the vehicle
+camera_initial_transform = carla.Transform(carla.Location(x=1.1, z=1.2))
 IM_WIDTH = 640*2
 IM_HEIGHT = 480*2
 
@@ -129,7 +124,10 @@ world.apply_settings(settings) # must be here after the destination is set
 while True:
     world.tick()
     for _ in range(len(sensor_list)):
-        s_frame = sensor_queue.get(True, 1.0)
+        if not sensor_queue.empty():
+            s_frame = sensor_queue.get(True, 1.0)
+        else:
+            time.sleep(1)
     if counter == 50: # you need to adjust this. The more image captures, the lower this value needs to be for OOD car to spawn in time.
         world.spawn_actor(random.choice(vehicle_blueprints), custom_defined_transform_for_ood)
         print("vehicle spawned")

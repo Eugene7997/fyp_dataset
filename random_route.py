@@ -4,17 +4,12 @@ import carla
 import random
 import time
 from queue import Queue
-import csv
-import pandas as pd
-import base64
 
 def write_to_csv(image_input, camera_type_name):    
     # TODO:
     # how to separate each image in csv? Newline? row size?
-    # implement for other cameras
 
     # Reference: https://www.geeksforgeeks.org/how-to-convert-an-image-to-numpy-array-and-saveit-to-csv-file-using-python/   
-    # print(f"camera_type_name {camera_type_name}")
     if camera_type_name == 'semanticSegmentation':
         # Assuming we are using original image. Original image has correct labels.
         buffer2 = np.frombuffer(image_input.raw_data, dtype=np.uint8)
@@ -36,9 +31,6 @@ def write_to_csv(image_input, camera_type_name):
         buffer2 = np.frombuffer(image_input.raw_data, dtype=np.uint8)
         buffer2 = buffer2.reshape(image_input.height, image_input.width, 4)[..., [2, 1, 0]]  # BGRA -> RGB
         buffer2 = buffer2.reshape(buffer2.shape[0], -1) # np save text does not allow 3d
-        # print(f"rgb {buffer2}")
-        # print(f"rgb {buffer2.shape}")
-        # print(f"rgb {type(buffer2)}")
         f=open('rgb.csv','ab')
         np.savetxt(f,buffer2, delimiter=",", fmt="%i") # require fmt cuz values keeps converting to float
         f.close()
@@ -85,7 +77,7 @@ spawn_points = world.get_map().get_spawn_points()
 ego_vehicle = world.spawn_actor(random.choice(vehicle_blueprints), random.choice(spawn_points))
 
 # camera
-camera_initial_transform = carla.Transform(carla.Location(z=2.5)) # Create a transform to place the camera on top of the vehicle
+camera_initial_transform = carla.Transform(carla.Location(x=1.1, z=0.2)) # Create a transform to place the camera on top of the vehicle
 IM_WIDTH = 640*2
 IM_HEIGHT = 480*2
 
@@ -134,18 +126,11 @@ for actor_ in list_actor:
 spectator = world.get_spectator()
 spectator.set_transform(ego_vehicle.get_transform())
 
-time.sleep(10)
-
 counter = 0
 while True:
     world.tick()
     for _ in range(len(sensor_list)):
         if not sensor_queue.empty():
-            # print(f"queue item removed")
             s_frame = sensor_queue.get(True, 1.0)
         else:
-            # print(f"empty queue")
             time.sleep(1)
-    if counter == 30:
-        break
-    counter += 1

@@ -8,12 +8,6 @@ from queue import Empty
 import time
 
 def write_to_csv(image_input, camera_type_name):    
-    # TODO:
-    # how to separate each image in csv? Newline? row size?
-    # implement for other cameras
-
-    # Reference: https://www.geeksforgeeks.org/how-to-convert-an-image-to-numpy-array-and-saveit-to-csv-file-using-python/   
-    # print(f"camera_type_name {camera_type_name}")
     if camera_type_name == 'semanticSegmentation':
         # Assuming we are using original image. Original image has correct labels.
         buffer2 = np.frombuffer(image_input.raw_data, dtype=np.uint8)
@@ -82,7 +76,7 @@ vehicle_blueprints = world.get_blueprint_library().filter('vehicle.tesla.model3'
 spawn_points = world.get_map().get_spawn_points()
 ego_vehicle = world.spawn_actor(random.choice(vehicle_blueprints), random.choice(spawn_points))
 # camera
-camera_initial_transform = carla.Transform(carla.Location(z=1.5)) # Create a transform to place the camera on top of the vehicle
+camera_initial_transform = carla.Transform(carla.Location(x=1.1, z=1.2))
 IM_WIDTH = 640*2
 IM_HEIGHT = 480*2
 
@@ -115,24 +109,25 @@ camera_rgb.listen(lambda data: rgbCameraCallback(data, sensor_queue, "rgb"))
 camera_optical_flow.listen(lambda data: opticalFlowCallback(data, sensor_queue, "opticalFlow"))
 camera_semantic_segmentation.listen(lambda data: semanticSegmentationFlowCallback(data, sensor_queue, "semanticSegmentation"))
 
-
 ego_vehicle.set_autopilot(True)
 
 world.apply_settings(settings)
 
 counter = 0
-counter2 = 0;
+counter_for_transform = 0;
 while True:
     world.tick()
     for _ in range(len(sensor_list)):
-        s_frame = sensor_queue.get(True, 1.0)
+        if not sensor_queue.empty():
+            s_frame = sensor_queue.get(True, 1.0)
+        else:
+            time.sleep(1)
     if (counter >= 100):
-        ego_vehicle.set_transform(carla.Transform(carla.Location(x=-227.037689+counter2, y=162.543137, z=0), carla.Rotation(pitch=1.956870, yaw=-1.042053, roll=0.000042)))
+        ego_vehicle.set_transform(carla.Transform(carla.Location(x=-227.037689+counter_for_transform, y=162.543137, z=0), carla.Rotation(pitch=1.956870, yaw=-1.042053, roll=0.000042)))
         ego_vehicle.set_autopilot(False) # Autopilot still works but unpredictable. From visual inspection of images, no difference using autopilot and teleportation.
         print("vehicle teleported") 
         print(ego_vehicle.get_transform())
-        # time.sleep(1)
-        counter2 += 1
+        counter_for_transform += 1
     counter+=1
     if (counter == 1000):
         break
