@@ -5,6 +5,7 @@ import random
 from agents.navigation.basic_agent import BasicAgent
 from queue import Queue
 from queue import Empty
+import time
 
 def write_to_csv(image_input, camera_type_name):    
     # TODO:
@@ -78,11 +79,11 @@ sensor_list = []
 # spawn vehicle
 vehicle_blueprints = world.get_blueprint_library().filter('vehicle.tesla.model3')
 # spawn_points = world.get_map().get_spawn_points()
-custom_defined_transform = carla.Transform(carla.Location(x=31.290208, y=-11.658614, z=1.980442), carla.Rotation(yaw=-90))
+custom_defined_transform = carla.Transform(carla.Location(x=31.290208, y=-11.658614, z=0.02), carla.Rotation(yaw=-90))
 ego_vehicle = world.spawn_actor(random.choice(vehicle_blueprints), custom_defined_transform)
 
 # camera
-camera_initial_transform = carla.Transform(carla.Location(z=2.5)) # Create a transform to place the camera on top of the vehicle
+camera_initial_transform = carla.Transform(carla.Location(x=1.1, z=1.2))
 IM_WIDTH = 640*2
 IM_HEIGHT = 480*2
 
@@ -122,22 +123,26 @@ camera_semantic_segmentation.listen(lambda data: semanticSegmentationFlowCallbac
 
 # move the vehicle in a straight direction
 counter = 0
-custom_defined_transform_for_ood = carla.Transform(carla.Location(x=35.590208, y=-41.658614, z=1.980442), carla.Rotation(yaw=-90))
+custom_defined_transform_for_ood = carla.Transform(carla.Location(x=35.590208, y=-41.658614, z=0.02), carla.Rotation(yaw=-90))
 
 world.apply_settings(settings) # must be here after the destination is set
 
-counter2 = 0
+counter_for_transform = 0
 while True:
     world.tick()
     for _ in range(len(sensor_list)):
-        s_frame = sensor_queue.get(True, 1.0)
+        if not sensor_queue.empty():
+            s_frame = sensor_queue.get(True, 1.0)
+        else:
+            time.sleep(1)
     if counter == 50: # you need to adjust this. The more image captures, the lower this value needs to be for OOD car to spawn in time.
         flying_vehicle = world.spawn_actor(random.choice(vehicle_blueprints), custom_defined_transform_for_ood)
         print("vehicle spawned")
     if counter >= 50: # you need to adjust this. The more image captures, the lower this value needs to be for OOD car to spawn in time.
-        flying_vehicle.set_transform(carla.Transform(carla.Location(x=35.590208, y=-41.658614+counter2, z=3.0), carla.Rotation(yaw=-90.0)))
-        print("vehicle teleported")
-        counter2 -= 1
+        flying_vehicle.set_transform(carla.Transform(carla.Location(x=35.590208, y=-41.658614-counter_for_transform, z=0.2+(counter_for_transform/10)), carla.Rotation(yaw=-90.0)))
+        print(flying_vehicle.get_transform())
+        # print("vehicle teleported")
+        counter_for_transform += 1
     if agent.done():
         print("The target has been reached, stopping the simulation")
         break
