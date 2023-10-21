@@ -7,12 +7,6 @@ import time
 from queue import Queue
 
 def write_to_csv(image_input, camera_type_name):    
-    # TODO:
-    # how to separate each image in csv? Newline? row size?
-    # implement for other cameras
-
-    # Reference: https://www.geeksforgeeks.org/how-to-convert-an-image-to-numpy-array-and-saveit-to-csv-file-using-python/   
-    # print(f"camera_type_name {camera_type_name}")
     if camera_type_name == 'semanticSegmentation':
         # Assuming we are using original image. Original image has correct labels.
         buffer2 = np.frombuffer(image_input.raw_data, dtype=np.uint8)
@@ -69,15 +63,19 @@ sensor_list = []
 client = carla.Client('localhost', 2000)
 world = client.get_world()
 client.load_world('Town05')
+settings = world.get_settings()
+settings.synchronous_mode = True # Enables synchronous mode
+settings.fixed_delta_seconds = 0.05
+
 
 # spawn vehicle
 vehicle_blueprints = world.get_blueprint_library().filter('vehicle.tesla.model3')
 # spawn_points = world.get_map().get_spawn_points()
-custom_defined_transform = carla.Transform(carla.Location(x=31.290208, y=-11.658614, z=1.980442), carla.Rotation(yaw=-90))
+custom_defined_transform = carla.Transform(carla.Location(x=31.290208, y=-11.658614, z=0.2), carla.Rotation(yaw=-90))
 ego_vehicle = world.spawn_actor(random.choice(vehicle_blueprints), custom_defined_transform)
 
 # camera
-camera_initial_transform = carla.Transform(carla.Location(z=2.5)) # Create a transform to place the camera on top of the vehicle
+camera_initial_transform = carla.Transform(carla.Location(x=1.1, z=1.2))
 IM_WIDTH = 640*2
 IM_HEIGHT = 480*2
 
@@ -110,45 +108,30 @@ camera_semantic_segmentation.listen(lambda data: semanticSegmentationFlowCallbac
 spectator = world.get_spectator()
 spectator.set_transform(ego_vehicle.get_transform())
 
-custom_defined_transform_for_ood = carla.Transform(carla.Location(x=32.290208, y=-21.658614, z=1.1), carla.Rotation(yaw=-90))
+custom_defined_transform_for_ood = carla.Transform(carla.Location(x=32.290208, y=-21.658614, z=0.2), carla.Rotation(yaw=-90))
 floating_vehicle = world.spawn_actor(random.choice(vehicle_blueprints), custom_defined_transform_for_ood)
 # set destination for vehicles
 agent = BasicAgent(floating_vehicle)
 # agent = BasicAgent(ego_vehicle)
 destination = carla.Location(x=32.190208, y=-65.702446, z=1.980442)
 agent.set_destination(destination)
-
-# ego_vehicle.set_enable_gravity(False)
-# ego_vehicle.set_simulate_physics(False)
-
-# front_left_wheel  = carla.WheelPhysicsControl(tire_friction=0)
-# front_right_wheel = carla.WheelPhysicsControl(tire_friction=0)
-# rear_left_wheel   = carla.WheelPhysicsControl(tire_friction=0)
-# rear_right_wheel  = carla.WheelPhysicsControl(tire_friction=0)
-# front_left_wheel  = carla.WheelPhysicsControl(tire_friction=4.5, damping_rate=1.0, max_steer_angle=70.0, radius=30.0)
-# front_right_wheel = carla.WheelPhysicsControl(tire_friction=2.5, damping_rate=1.5, max_steer_angle=70.0, radius=25.0)
-# rear_left_wheel   = carla.WheelPhysicsControl(tire_friction=1.0, damping_rate=0.2, max_steer_angle=0.0,  radius=15.0)
-# rear_right_wheel  = carla.WheelPhysicsControl(tire_friction=1.5, damping_rate=1.3, max_steer_angle=0.0,  radius=20.0)
-# wheels = [front_left_wheel, front_right_wheel, rear_left_wheel, rear_right_wheel]
-# physics_control = ego_vehicle.get_physics_control()
-# physics_control.wheels = wheels
-# physics_control.mass = 0
-
-
 ego_vehicle.set_autopilot(True)
+
+world.apply_settings(settings)
+
 # move the vehicle in a straight direction
-counter = 0
 while True:
+    world.tick()
+    for _ in range(len(sensor_list)):
+        if not sensor_queue.empty():
+            s_frame = sensor_queue.get(True, 1.0)
+        else:
+            time.sleep(1)
+
     if agent.done():
         print("The target has been reached, stopping the simulation")
         break
-    # ego_vehicle.apply_control(agent.run_step())
-    # if floating_vehicle.get_transform().location.z > 1:
-    #     floating_vehicle.set_enable_gravity(True)
-    # if floating_vehicle.get_transform().location.z < 0.1:
-    #     floating_vehicle.set_enable_gravity(False)
     floating_vehicle.apply_control(agent.run_step())
     if floating_vehicle.get_transform().location.y < -25:
         floating_vehicle.set_enable_gravity(False)
-    counter = counter + 1
 time.sleep(1000)
